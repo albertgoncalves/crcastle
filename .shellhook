@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+if [ "$(uname -s)" = "Darwin" ]; then
+    alias ls="ls --color=auto"
+    alias ll="ls -l"
+else
+    alias open="xdg-open"
+fi
+
+export WD=$PWD
+
+if [ ! -d "$WD/bin" ]; then
+    mkdir "$WD/bin"
+fi
+
+runcr () {
+    handle=$(echo "$1" | sed 's/^[a-z\/]*\/\(.*\)\.[a-z]*$/\1/')
+    crystal tool format "$1"
+    crystal build -o "$WD/bin/$handle" "$1"
+    "$WD/bin/$handle"
+}
+
+export -f runcr
