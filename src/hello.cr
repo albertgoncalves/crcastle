@@ -1,23 +1,44 @@
-def f(&block : String -> Nil) : String
-  x = yield "Second?"
-  puts "First"
-  puts x
-  puts yield "Third"
-  "Hello, world!"
+class Point
+  @x : UInt8
+  @y : UInt8
+
+  def initialize(rng : Random) : Nil
+    @x = rng.rand(UInt8)
+    @y = rng.rand(UInt8)
+  end
+
+  def x : UInt8
+    @x
+  end
+
+  def y : UInt8
+    @y
+  end
 end
 
-def g(x : String) : String
-  x
+macro pretty_print(points)
+  {{points}}.each do |p|
+    printf("{x: %3d, y: %3d}\n", p.x, p.y)
+  end
+  print('\n')
 end
 
-def main
-  x : String = f do |x|
-    g x
+macro sort_by(static_array, field)
+  {{static_array}}.to_slice.sort! do |a, b|
+    a.{{field}}.to_i32 - b.{{field}}.to_i32
   end
-  x.each_char do |char|
-    print char
+end
+
+def main : Nil
+  rng = Random.new
+  points = StaticArray(Point, 10).new do |_|
+    Point.new(rng)
   end
-  print '\n'
+  pretty_print(points)
+  {% for field in ["x", "y"] %}
+    sort_by(points, {{field.id}})
+    pretty_print(points)
+  {% end %}
 end
 
 main
