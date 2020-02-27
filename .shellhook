@@ -16,7 +16,7 @@ fi
 runcr () {
     handle=$(echo "$1" | sed 's/^[a-z\/]*\/\(.*\)\.[a-z]*$/\1/')
     crystal tool format "$1" || return
-    crystal build -o "$WD/bin/$handle" "$1" || return
+    crystal build -p --release -o "$WD/bin/$handle" "$1" || return
     "$WD/bin/$handle"
 }
 

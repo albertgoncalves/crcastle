@@ -1,26 +1,31 @@
-class Point
-  @x : UInt8
-  @y : UInt8
+require "benchmark"
+require "json"
+require "spec"
 
-  def initialize(rng : Random) : Nil
-    @x = rng.rand(UInt8)
-    @y = rng.rand(UInt8)
-  end
+N = 12_i32
 
-  def x : UInt8
-    @x
-  end
+{% for t in ["class", "struct"] %}
+  {{t.id}} Point{{t.capitalize.id}}
+    getter(x : UInt8, y : UInt8)
 
-  def y : UInt8
-    @y
+    def initialize(rng : Random) : Nil
+      @x = rng.rand(UInt8)
+      @y = rng.rand(UInt8)
+    end
   end
-end
+{% end %}
 
-macro pretty_print(points)
-  {{points}}.each do |p|
-    printf("{x: %3d, y: %3d}\n", p.x, p.y)
+def points_to_json(points : StaticArray(_, _)) : String
+  JSON.build do |json|
+    json.array do
+      points.each do |p|
+        json.object do
+          json.field("x", p.x)
+          json.field("y", p.y)
+        end
+      end
+    end
   end
-  print('\n')
 end
 
 macro sort_by(static_array, field)
@@ -29,16 +34,39 @@ macro sort_by(static_array, field)
   end
 end
 
-def main : Nil
-  rng = Random.new
-  points = StaticArray(Point, 10).new do |_|
-    Point.new(rng)
+macro make_array(t, rng)
+  StaticArray({{t}}, N).new do |_|
+    {{t}}.new({{rng}})
   end
-  pretty_print(points)
+end
+
+def main : Nil
+  Benchmark.ips do |b|
+    {% for t in ["class", "struct"] %}
+      b.report("StaticArray(Point{{t.capitalize.id}}, #{N})") do
+        rng = Random.new
+        make_array(Point{{t.capitalize.id}}, rng)
+      end
+    {% end %}
+  end
+
+  rng = Random.new
+  points : StaticArray(PointStruct, N) = make_array(PointStruct, rng)
+  puts points_to_json(points)
   {% for field in ["x", "y"] %}
     sort_by(points, {{field.id}})
-    pretty_print(points)
+    puts points_to_json(points)
   {% end %}
+
+  describe "something" do
+    it "should be fine" do
+      true.should be_true
+    end
+
+    it "should not be fine" do
+      true.should be_false
+    end
+  end
 end
 
 main
